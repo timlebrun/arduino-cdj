@@ -1,0 +1,3 @@
+struct CDJReleaseControl {
+  byte inputByte;
+};

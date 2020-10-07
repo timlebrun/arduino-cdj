@@ -1,0 +1,89 @@
+OK SO
+
+IT SEEMS (for BPM)  4 => byte 11 12 & 13
+
+Feels like individual segments from the digit displays
+
+
+BUT if we keep the logic, we can seen patterns appear for other displays
+
+DONC si la logique est la même
+Track = package 0x40 byte 11 et 12
+
+
+9 8 5
+ba fe be
+
+0x20 x 0x11
+
+LE SIGNE C OU
+0x10 x 0x11 it seems
+d7 for +		11010111
+d6 for -		11010110
+d4 for NONE 	11010100
+
+Peutetre      - xxxxxx%x
+Peutetre      - xxxxxxBx
+Probablement  - x,,xMWxx
+when wide d6  - 11010110
+when not b2   - 10110010
+when MT ba    - 10111010
+
+Probablement  - x,,xxWxx
+when not b2   - 10110010
+
+Visiblement -> barre d'avancement = 0x50 x 0x05 ?
+
+loop 
+3c vs 7c ?
+
+
+[00] 00 00 00 00 00 00 00 00 00 00 00 37 00 58 00 00 00 57 e6 
+[10] 10 00 00 00 00 00 00 00 00 00 00 b0 00 00 00 00 00 57 07 
+[20] 20 00 00 40 40 01 05 14 14 45 00 ee ee ee 00 00 00 57 14 
+[30] 30 02 00 80 95 03 a7 1e 30 3f 00 fe ba 24 00 00 00 57 81 
+[40] 40 06 80 0a 2a a8 80 a0 aa aa 00 3c ee 00 00 00 00 57 57 
+[50] 50 00 00 00 00 fc ff ff ff ff ff 00 d0 77 00 00 00 57 95
+
+
+
+
+(CD) Mix
+
+
+
+[00] 00 00 00 00 00 00 00 00 00 00 00 37 00 58 00 00 00 57 e6 
+[10] 10 00 00 00 00 00 00 00 00 00 00 b0 00 00 00 00 00 57 07 
+[20] 20 00 00 40 40 44 40 40 44 40 00 ee ee ee 00 00 00 57 e9 
+[30] 30 86 54 54 4e 31 85 14 52 6a 00 fe ba 24 00 00 00 57 35 
+[40] 40 86 82 aa aa 8a aa aa 0a 0a 00 3c ee 00 00 00 00 57 cf 
+[50] 50 00 00 00 00 fc ff ff ff ff ff 00 d0 77 00 00 00 57 95 
+
+Seems to be a display 
+
+00 00 00 00 00 00 00 00 00   00 37 00 78 00 00 00 29 d8 
+00 00 00 00 00 00 00 00 00   00 b0 00 00 00 00 00 29 d9 
+00 00 40 40 44 40 40 44 40   00 ee ee ee 00 00 00 29 bb 
+86 54 54 4e 31 85 14 52 6a   00 fe ba 24 00 00 00 29 07 
+86 82 aa aa 8a aa aa 0a 0a   00 3c ee 00 00 00 00 29 a1 
+
+// not this. This is progress bar
+[50] 50 00 00 00 00 3c 00 00 00 f0 ff 00 d0 67 00 00 00 29 8b 
+
+Visiblement c'est de la droite vers la gauche
+Pas de dessin visible à l'oeil nu
+
+9 x byte = 72
+72 x 5 lignes = 360
+360px / 9 characters = 40 px/char ?
+
+display = 7x5 = 35
+
+
+
+[00] 00 00 00 ee ee ee ee 00 fe fe ba 00 40 ee ee 00 00 00 8a 
+[10] 10 00 00 00 3f 03 0c 30 00 3f 00 b0 00 00 00 00 00 29 96 
+[20] 20 04 10 40 3e 07 af 3e 50 3f 00 ee ee ee 00 00 00 29 08 
+[30] 30 56 11 50 6a 57 ee 3a 44 6a 00 fe ba 24 00 00 00 29 53 
+[40] 40 06 80 0a 2a a8 80 a0 aa aa 00 3c ee 00 00 00 00 29 29 
+[50] 50 00 00 00 00 3c 00 00 00 f0 ff 00 d0 77 00 00 00 29 9b 

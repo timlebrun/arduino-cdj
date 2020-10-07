@@ -15,14 +15,25 @@ bool panelButtonControlStates[panelButtonControlsCount];
 CircularBuffer<byte, 255> circularBuffer;
 
 CircularBuffer<byte, 20> displayBuffer;
-CircularBuffer<byte, 114> mainBuffer; // 6 packages of 19 bytes = 114
+CircularBuffer<byte, 19> mainBuffer; // 6 packages of 19 bytes = 114
 
 // @todo maybe make an actual struct for packages ?
 
+bool gotFreshDisplayPackage = false;
 volatile byte displayPackage[20]; // Package data from DISPLAY board
 byte displayPackageSize = 0;
 
-volatile byte mainPackage[0]; // Package from MAIN board
+
+// Packages from MAIN board (19 bytes - checksum and number)
+// Dumb variable names because i want to check i dont just suck at arrays
+byte firstMainPackage[19];
+byte secondMainPackage[19];
+byte thirdMainPackage[19];
+byte fourthMainPackage[19];
+byte fifthMainPackage[19];
+byte sixthMainPackage[19];
+
+bool gotFreshMainPackage = false;
 byte mainPackageSize = 0;
 
 // Used for display debug and RE
@@ -65,6 +76,8 @@ ISR (SPI_STC_vect) {
 
 	// grabDisplayBufferByte(SPDR);
 	// grabMainBufferByte(SPDR); // Cant do both for now
+	mainBuffer.push(SPDR);
+
 }
 
 void grabMainBufferByte(byte payload) {
@@ -73,7 +86,6 @@ void grabMainBufferByte(byte payload) {
 	// have to find a way to do this OUTSIDE the interrupt
 	// if (payload == 0xa6 && mainBuffer.last() == 0x30) mainBuffer.clear();
 
-	mainBuffer.push(payload);
 }
 
 void grabDisplayBufferByte(byte payload) {
@@ -83,32 +95,131 @@ void grabDisplayBufferByte(byte payload) {
 }
 
 void loop () {
-	byte size = mainBuffer.size();
-	byte test[255];
+	// delay(1);
+	noInterrupts();
+	// checkDisplayBuffer();
+	checkMainBuffer();
+	interrupts();
 
-	for (byte i = 0; i < size; i++) test[i] = mainBuffer[i]; // Store as quick as possible
-	mainBuffer.clear();
+	if (gotFreshMainPackage) {
+		Serial.println("");
+		Serial.print("[00] "); dumpToSerial(firstMainPackage, 19);
+		Serial.print("[10] "); dumpToSerial(secondMainPackage, 19);
+		Serial.print("[20] "); dumpToSerial(thirdMainPackage, 19);
+		Serial.print("[30] "); dumpToSerial(fourthMainPackage, 19);
+		Serial.print("[40] "); dumpToSerial(fifthMainPackage, 19);
+		Serial.print("[50] "); dumpToSerial(sixthMainPackage, 19);
+		Serial.println("");
+		Serial.println("");
 
-	for (byte i = 0; i < size; i++) {
-		char hexByteString[3];
-		sprintf(hexByteString, "%02x ", test[i]);
-		Serial.print(hexByteString);
+		gotFreshMainPackage = false; // Sorry dude :/
+		delay(10);
+
 	}
 
-	Serial.println("");
-	Serial.println(size);
-	Serial.println("");
+	// 
+	// check display buffer
+	// check main buffer
 
-	// maybe try something like
-	// stop interrupts
-	// check first byte, if counter value check checksum
-	// if okay store
-	// else continue
+	// byte size = mainBuffer.size();
+	// byte test[255];
 
-	delay(100);
+	// for (byte i = 0; i < size; i++) test[i] = mainBuffer[i]; // Store as quick as possible
+	// mainBuffer.clear();
+
+	// for (byte i = 0; i < size; i++) {
+	// 	char hexByteString[3];
+	// 	sprintf(hexByteString, "%02x ", test[i]);
+	// 	Serial.print(hexByteString);
+	// }
+
+	// Serial.println("");
+	// Serial.println(size);
+	// Serial.println("");
+
+	// // maybe try something like
+	// // stop interrupts
+	// // check first byte, if counter value check checksum
+	// // if okay store
+	// // else continue
+
+	// delay(100);
 }
 
-void dumpCurrentPackageToSerial() {
+void checkMainBuffer() {
+	byte firstByte = mainBuffer.first();
+
+	// Store directly 
+	if (firstByte == 0x00) checkAndStoreMainPackage(firstMainPackage);
+	if (firstByte == 0x10) checkAndStoreMainPackage(secondMainPackage);
+	if (firstByte == 0x20) checkAndStoreMainPackage(thirdMainPackage);
+	if (firstByte == 0x30) checkAndStoreMainPackage(fourthMainPackage);
+	if (firstByte == 0x40) checkAndStoreMainPackage(fifthMainPackage);
+	if (firstByte == 0x50) checkAndStoreMainPackage(sixthMainPackage);
+
+	return;
+}
+
+void checkAndStoreMainPackage(byte package[]) {
+	// We already kno here the first byte is okay
+	if (!mainBufferIsValidPackage()) return;
+
+	// Starting at 1 to not store the index number (but keep package starting at 0)
+	for (byte i = 0; i < mainBuffer.size(); i++) package[i] = mainBuffer[i];
+
+	gotFreshMainPackage = true;
+}
+
+bool mainBufferIsValidPackage() {
+	byte lastByte = mainBuffer.last();
+	byte checkSum = getMainCheckSum(
+		mainBuffer[1],
+		mainBuffer[2],
+		mainBuffer[3],
+		mainBuffer[4],
+		mainBuffer[5],
+		mainBuffer[6],
+		mainBuffer[7],
+		mainBuffer[8],
+		mainBuffer[9],
+		mainBuffer[10],
+		mainBuffer[11],
+		mainBuffer[12],
+		mainBuffer[13],
+		mainBuffer[14],
+		mainBuffer[15],
+		mainBuffer[16],
+		mainBuffer[17] // Grmbl not in C
+	);
+
+	// Serial.println("CHECK");
+	// Serial.println(lastByte);
+	// Serial.println(checkSum);
+	// Serial.println("");
+
+	return lastByte == checkSum;
+}
+
+void checkDisplayBuffer() {
+	if (displayBuffer[0] != 0x01) return;
+	if (displayBuffer[1] != 0x10) return;
+
+	displayPackageSize = 0; // Reset size
+	for (byte i = 0; i < displayBuffer.size(); i++) {
+		displayPackage[i] = displayBuffer[i];
+		displayPackageSize++; // Increment size
+	}
+
+	gotFreshDisplayPackage = true;
+
+	return;
+}
+
+byte getMainCheckSum(byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7, byte b8, byte b9, byte b10, byte b11, byte b12, byte b13, byte b14, byte b15, byte b16, byte b17) {
+	return (b1 + b2 + b3 + b4 + b5 + b6 + b7 + b8 + b9 + b10 + b11 + b12 + b13 + b14 + b15 + b16 + b17) % 256;
+}
+
+void dumpCurrentDisplayPackageToSerial() {
 	for (byte i = 0; i < displayPackageSize; i++) {
 		char hexByteString[3];
 		sprintf(hexByteString, "%02x ", displayPackage[i]);
@@ -118,6 +229,16 @@ void dumpCurrentPackageToSerial() {
 	char bytesCount[16];
 	sprintf(bytesCount, "(%d bytes)", displayPackageSize);
 	Serial.println(bytesCount);
+}
+
+void dumpToSerial(byte bytes[], byte size) {
+	for (byte i = 0; i < size; i++) {
+		char hexByteString[3];
+		sprintf(hexByteString, "%02x ", bytes[i]);
+		Serial.print(hexByteString);
+	}
+
+	Serial.println("");
 }
 
 void dumpChangesToPackage() {
